@@ -13,24 +13,22 @@ const fadeOut = (gainNode, duration) => {
   gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
 };
 
-const playSound = (audioElement, gainNode, randomness, grainLengthInMiliseconds, fadeInDuration, fadeOutDuration) => {
-  fadeIn(gainNode, fadeInDuration);
+const playSound = (audioElement, gainNode, track) => {
+  fadeIn(gainNode, track.fadeInLength);
   audioElement.play();
-  audioElement.currentTime = Math.floor(Math.random() * randomness);
+  audioElement.currentTime = Math.floor(Math.random() * track.randomness);
 
   window.setTimeout(() => {
-    fadeOut(gainNode, fadeOutDuration); 
-  }, grainLengthInMiliseconds - (fadeOutDuration * 1000));
+    fadeOut(gainNode, track.fadeOutLength); 
+  }, track.grainLengthInMiliseconds - track.fadeOutLengthInMiliseconds);
 };
 
-const playSoundForever = (audioElement, gainNode, randomness, grainLengthInSeconds, grainFadeInDuration, grainFadeOutDuration) => {
-  const secondsAsMiliseconds = grainLengthInSeconds * 1000;
-
-  playSound(audioElement, gainNode, randomness, secondsAsMiliseconds, grainFadeInDuration, grainFadeOutDuration);
+const playSoundForever = (audioElement, gainNode, track) => {
+  playSound(audioElement, gainNode, track);
 
   window.setInterval(() => {
-    playSound(audioElement, gainNode, randomness, secondsAsMiliseconds, grainFadeInDuration, grainFadeOutDuration);
-  }, secondsAsMiliseconds);
+    playSound(audioElement, gainNode, track);
+  }, track.grainLengthInMiliseconds);
 };
 
 const createDiv = () => {
@@ -83,15 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const addSourceButton = document.querySelector('button[role="addSource"]');
 
   addSourceButton.addEventListener('click', function() {
-    const newTrack = {
-      randomness: 2,
-      grainLength: 1,
-      fadeInLength: 0.03,
-      fadeOutLength: 0.03
-    };
-
-    tracks.concat(newTrack);
-
+    let newTrack;
+    
     const body = document.querySelector('body');
 
     const div = createDiv();
@@ -116,12 +107,13 @@ document.addEventListener("DOMContentLoaded", () => {
     audioInput.onchange = function() {
       const file = this.files[0];
       const fileURL = window.URL.createObjectURL(file);
+      newTrack = new Track(fileURL);
       audio.setAttribute('src', fileURL);
     };
 
     playStopButton.onclick = () => {
       div.style.backgroundColor = 'green';
-      playSoundForever(audio, gainNode, newTrack.randomness, newTrack.grainLength, newTrack.fadeInLength, newTrack.fadeOutLength);
+      playSoundForever(audio, gainNode, newTrack);
     };
 
     randomnessInput.onchange = function() {
